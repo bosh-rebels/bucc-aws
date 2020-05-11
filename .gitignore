@@ -1,0 +1,9 @@
+*.tfvars
+*.tfplan
+*.tfstate*
+.terraform
+envs/ssh/*
+creds.yml
+vars.yml
+state*
+tmp
