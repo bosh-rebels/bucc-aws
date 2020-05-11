@@ -1,6 +1,6 @@
 [submodule "src/bucc"]
 	path = src/bucc
-	url = https://github.com/starkandwayne/bucc
+	url = https://github.com/starkandwayne/bucc.git
 [submodule "src/jumpbox-deployment"]
 	path = src/jumpbox-deployment
-	url = https://github.com/cppforlife/jumpbox-deployment
+	url = https://github.com/cloudfoundry/jumpbox-deployment.git
