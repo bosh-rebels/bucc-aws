@@ -17,7 +17,7 @@ chmod 700 $ENVDIR/ssh
 bosh int $ENVDIR/creds.yml --path /jumpbox_ssh/private_key > envs/ssh/jumpbox.pem
 chmod 600 envs/ssh/jumpbox.pem
 
-jumpbox_ip=$(terraform output --state=envs/aws/terraform.tfstate box.jumpbox.public_ip)
+jumpbox_ip=$(terraform output --state=envs/aws/terraform.tfstate box_jumpbox_public_ip)
 
 if [[ "$direction" == "to" ]]; then
   set -x
