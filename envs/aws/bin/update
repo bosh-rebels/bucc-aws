@@ -9,4 +9,3 @@ echo "Updating $envname..."
 cd $ENVDIR
 
 make all
-
