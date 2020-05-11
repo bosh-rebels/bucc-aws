@@ -2,11 +2,11 @@ variable "aws_access_key" {} # Your Access Key ID                       (require
 
 variable "aws_secret_key" {} # Your Secret Access Key                   (required)
 
-output "aws.creds.aws_access_key" {
+output "aws_creds_aws_access_key" {
   value = var.aws_access_key
 }
 
-output "aws.creds.aws_secret_key" {
+output "aws_creds_aws_secret_key" {
   value = var.aws_secret_key
 }
 
@@ -14,22 +14,22 @@ variable "aws_vpc_name" {} # Name of your VPC                           (require
 
 variable "aws_key_name" {} # Name of EC2 Keypair                        (required)
 
-output "aws.creds.key_name" {
+output "aws_creds_key_name" {
   value = var.aws_key_name
 }
 
 variable "aws_key_file" {} # Location of the private EC2 Keypair file   (required)
 
-output "aws.creds.key_file" {
+output "aws_creds_key_file" {
   value = var.aws_key_file
 }
 
 variable "aws_region" {
   # AWS Region
-  default = "eu-west-21"
+  default = "eu-west-1"
 }
 
-output "aws.network.region" {
+output "aws_network_region" {
   value = var.aws_region
 }
 
@@ -38,7 +38,7 @@ variable "network" {
   default = "10.4"
 }
 
-output "aws.network.prefix" {
+output "aws_network_prefix" {
   value = var.network
 }
 
@@ -56,7 +56,7 @@ variable "aws_az3" {
 
 variable "jumpbox_ip" {} # IP to be used for jumpbox/bastion
 
-output "box.jumpbox.public_ip" {
+output "box_jumpbox_public_ip" {
   value = var.jumpbox_ip
 }
 
@@ -166,11 +166,11 @@ resource "aws_route_table_association" "dmz" {
   route_table_id = aws_route_table.external.id
 }
 
-output "aws.network.dmz.subnet" {
+output "aws_network_dmz_subnet" {
   value = aws_subnet.dmz.id
 }
 
-output "aws.network.dmz.az" {
+output "aws_network_dmz_az" {
   value = "${var.aws_region}${var.aws_az1}"
 }
 
@@ -191,11 +191,11 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.internal.id
 }
 
-output "aws.network.private.subnet" {
+output "aws_network_private_subnet" {
   value = aws_subnet.private.id
 }
 
-output "aws.network.private.az" {
+output "aws_network_private_az" {
   value = "${var.aws_region}${var.aws_az2}"
 }
 
@@ -216,11 +216,11 @@ resource "aws_route_table_association" "cf-services" {
   route_table_id = aws_route_table.internal.id
 }
 
-output "aws.network.cf-services.subnet" {
+output "aws_network_cf-services_subnet" {
   value = aws_subnet.cf-services.id
 }
 
-output "aws.network.cf-services.az" {
+output "aws_network_cf-services_az" {
   value = "${var.aws_region}${var.aws_az3}"
 }
 
@@ -536,15 +536,15 @@ resource "aws_security_group" "openvpn" {
   }
 }
 
-output "aws.network.sg.dmz" {
+output "aws_network_sg_dmz" {
   value = aws_security_group.dmz.id
 }
 
-output "aws.network.sg.wide-open" {
+output "aws_network_sg_wide-open" {
   value = aws_security_group.wide-open.id
 }
 
-output "aws.network.sg.openvpn" {
+output "aws_network_sg_openvpn" {
   value = aws_security_group.openvpn.id
 }
 
@@ -571,7 +571,6 @@ resource "aws_instance" "nat" {
   }
 }
 
-output "box.nat.public" {
+output "box_nat_public" {
   value = aws_instance.nat.public_ip
 }
-
