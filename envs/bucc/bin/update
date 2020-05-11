@@ -20,7 +20,7 @@ if [[ "${SKIP_CREATE_ENV:-x}" == "x" ]]; then
       > $ENVDIR/state/state.json
     action=up
   fi
-  src/bucc/bin/bucc ${action}
+  src/bucc/bin/bucc ${action} --cpi aws
 fi
 
 if [[ "${action}" == "up" ]]; then
