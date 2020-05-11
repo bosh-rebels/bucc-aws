@@ -1,39 +1,63 @@
 variable "aws_access_key" {} # Your Access Key ID                       (required)
+
 variable "aws_secret_key" {} # Your Secret Access Key                   (required)
+
 output "aws.creds.aws_access_key" {
-  value = "${var.aws_access_key}"
+  value = var.aws_access_key
 }
+
 output "aws.creds.aws_secret_key" {
-  value = "${var.aws_secret_key}"
+  value = var.aws_secret_key
 }
-variable "aws_vpc_name"   {} # Name of your VPC                         (required)
 
-variable "aws_key_name"   {} # Name of EC2 Keypair                      (required)
+variable "aws_vpc_name" {} # Name of your VPC                           (required)
+
+variable "aws_key_name" {} # Name of EC2 Keypair                        (required)
+
 output "aws.creds.key_name" {
-  value = "${var.aws_key_name}"
+  value = var.aws_key_name
 }
-variable "aws_key_file"   {} # Location of the private EC2 Keypair file (required)
+
+variable "aws_key_file" {} # Location of the private EC2 Keypair file   (required)
+
 output "aws.creds.key_file" {
-  value = "${var.aws_key_file}"
+  value = var.aws_key_file
 }
 
-variable "aws_region"     { default = "us-west-2" } # AWS Region
+variable "aws_region" {
+  # AWS Region
+  default = "eu-west-21"
+}
+
 output "aws.network.region" {
-  value = "${var.aws_region}"
+  value = var.aws_region
 }
 
-variable "network"        { default = "10.4" }      # First 2 octets of your /16
+variable "network" {
+  # First 2 octets of your /16
+  default = "10.4"
+}
+
 output "aws.network.prefix" {
-  value = "${var.network}"
+  value = var.network
 }
 
-variable "aws_az1"        { default = "a" }
-variable "aws_az2"        { default = "b" }
-variable "aws_az3"        { default = "c" }
+variable "aws_az1" {
+  default = "a"
+}
 
-variable "jumpbox_ip"     {} # IP to be used for jumpbox/bastion
+variable "aws_az2" {
+  default = "b"
+}
+
+variable "aws_az3" {
+  default = "c"
+}
+
+variable "jumpbox_ip" {} # IP to be used for jumpbox/bastion
+
 output "box.jumpbox.public_ip" {
-  value = "${var.jumpbox_ip}"
+  value = var.jumpbox_ip
 }
 
 #
@@ -68,9 +92,9 @@ variable "aws_nat_ami" {
 ###############################################################
 
 provider "aws" {
-  access_key = "${var.aws_access_key}"
-  secret_key = "${var.aws_secret_key}"
-  region     = "${var.aws_region}"
+  access_key = var.aws_access_key
+  secret_key = var.aws_secret_key
+  region     = var.aws_region
 }
 
 ###############################################################
@@ -78,10 +102,10 @@ provider "aws" {
 resource "aws_vpc" "default" {
   cidr_block           = "${var.network}.0.0/16"
   enable_dns_hostnames = "true"
-  tags { Name = "${var.aws_vpc_name}" }
+  tags = {
+    Name = var.aws_vpc_name
+  }
 }
-
-
 
 ########   #######  ##     ## ######## #### ##    ##  ######
 ##     ## ##     ## ##     ##    ##     ##  ###   ## ##    ##
@@ -92,51 +116,60 @@ resource "aws_vpc" "default" {
 ##     ##  #######   #######     ##    #### ##    ##  ######
 
 resource "aws_internet_gateway" "default" {
-  vpc_id = "${aws_vpc.default.id}"
+  vpc_id = aws_vpc.default.id
 }
+
 resource "aws_route_table" "external" {
-  vpc_id = "${aws_vpc.default.id}"
+  vpc_id = aws_vpc.default.id
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.default.id}"
+    gateway_id = aws_internet_gateway.default.id
   }
-  tags { Name = "${var.aws_vpc_name}-external" }
+  tags = {
+    Name = "${var.aws_vpc_name}-external"
+  }
 }
+
 resource "aws_route_table" "internal" {
-  vpc_id = "${aws_vpc.default.id}"
+  vpc_id = aws_vpc.default.id
   route {
-    cidr_block = "0.0.0.0/0"
-    instance_id = "${aws_instance.nat.id}"
+    cidr_block  = "0.0.0.0/0"
+    instance_id = aws_instance.nat.id
   }
-  tags { Name = "${var.aws_vpc_name}-internal" }
+  tags = {
+    Name = "${var.aws_vpc_name}-internal"
+  }
 }
 
-
-
- ######  ##     ## ########  ##    ## ######## ########  ######
+######  ##     ## ########  ##    ## ######## ########  ######
 ##    ## ##     ## ##     ## ###   ## ##          ##    ##    ##
 ##       ##     ## ##     ## ####  ## ##          ##    ##
- ######  ##     ## ########  ## ## ## ######      ##     ######
-      ## ##     ## ##     ## ##  #### ##          ##          ##
+######  ##     ## ########  ## ## ## ######      ##     ######
+## ##     ## ##     ## ##  #### ##          ##          ##
 ##    ## ##     ## ##     ## ##   ### ##          ##    ##    ##
- ######   #######  ########  ##    ## ########    ##     ######
+######   #######  ########  ##    ## ########    ##     ######
 
 ###############################################################
 # DMZ - De-militarized Zone for NAT box ONLY
 #
 resource "aws_subnet" "dmz" {
-  vpc_id            = "${aws_vpc.default.id}"
+  vpc_id            = aws_vpc.default.id
   cidr_block        = "${var.network}.0.0/24"
   availability_zone = "${var.aws_region}${var.aws_az1}"
-  tags { Name = "${var.aws_vpc_name}-dmz" }
+  tags = {
+    Name = "${var.aws_vpc_name}-dmz"
+  }
 }
+
 resource "aws_route_table_association" "dmz" {
-  subnet_id      = "${aws_subnet.dmz.id}"
-  route_table_id = "${aws_route_table.external.id}"
+  subnet_id      = aws_subnet.dmz.id
+  route_table_id = aws_route_table.external.id
 }
+
 output "aws.network.dmz.subnet" {
-  value = "${aws_subnet.dmz.id}"
+  value = aws_subnet.dmz.id
 }
+
 output "aws.network.dmz.az" {
   value = "${var.aws_region}${var.aws_az1}"
 }
@@ -145,18 +178,23 @@ output "aws.network.dmz.az" {
 # Private - common subnet for deployments, including CF
 #
 resource "aws_subnet" "private" {
-  vpc_id            = "${aws_vpc.default.id}"
+  vpc_id            = aws_vpc.default.id
   cidr_block        = "${var.network}.1.0/24"
   availability_zone = "${var.aws_region}${var.aws_az2}"
-  tags { Name = "${var.aws_vpc_name}-private" }
+  tags = {
+    Name = "${var.aws_vpc_name}-private"
+  }
 }
+
 resource "aws_route_table_association" "private" {
-  subnet_id      = "${aws_subnet.private.id}"
-  route_table_id = "${aws_route_table.internal.id}"
+  subnet_id      = aws_subnet.private.id
+  route_table_id = aws_route_table.internal.id
 }
+
 output "aws.network.private.subnet" {
-  value = "${aws_subnet.private.id}"
+  value = aws_subnet.private.id
 }
+
 output "aws.network.private.az" {
   value = "${var.aws_region}${var.aws_az2}"
 }
@@ -165,22 +203,26 @@ output "aws.network.private.az" {
 # CF Services - common subnet for deployments, including CF
 #
 resource "aws_subnet" "cf-services" {
-  vpc_id     = "${aws_vpc.default.id}"
-  cidr_block = "${var.network}.2.0/24"
+  vpc_id            = aws_vpc.default.id
+  cidr_block        = "${var.network}.2.0/24"
   availability_zone = "${var.aws_region}${var.aws_az3}"
-  tags { Name = "${var.aws_vpc_name}-cf-services" }
+  tags = {
+    Name = "${var.aws_vpc_name}-cf-services"
+  }
 }
+
 resource "aws_route_table_association" "cf-services" {
-  subnet_id      = "${aws_subnet.cf-services.id}"
-  route_table_id = "${aws_route_table.internal.id}"
+  subnet_id      = aws_subnet.cf-services.id
+  route_table_id = aws_route_table.internal.id
 }
+
 output "aws.network.cf-services.subnet" {
-  value = "${aws_subnet.cf-services.id}"
+  value = aws_subnet.cf-services.id
 }
+
 output "aws.network.cf-services.az" {
   value = "${var.aws_region}${var.aws_az3}"
 }
-
 
 ##    ##    ###     ######  ##        ######
 ###   ##   ## ##   ##    ## ##       ##    ##
@@ -191,18 +233,19 @@ output "aws.network.cf-services.az" {
 ##    ## ##     ##  ######  ########  ######
 
 resource "aws_network_acl" "hardened" {
-  vpc_id = "${aws_vpc.default.id}"
+  vpc_id = aws_vpc.default.id
   subnet_ids = [
   ]
-  tags { Name = "${var.aws_vpc_name}-hardened" }
-
+  tags = {
+    Name = "${var.aws_vpc_name}-hardened"
+  }
 
   #### ##    ##  ######   ########  ########  ######   ######
-   ##  ###   ## ##    ##  ##     ## ##       ##    ## ##    ##
-   ##  ####  ## ##        ##     ## ##       ##       ##
-   ##  ## ## ## ##   #### ########  ######    ######   ######
-   ##  ##  #### ##    ##  ##   ##   ##             ##       ##
-   ##  ##   ### ##    ##  ##    ##  ##       ##    ## ##    ##
+  ##  ###   ## ##    ##  ##     ## ##       ##    ## ##    ##
+  ##  ####  ## ##        ##     ## ##       ##       ##
+  ##  ## ## ## ##   #### ########  ######    ######   ######
+  ##  ##  #### ##    ##  ##   ##   ##             ##       ##
+  ##  ##   ### ##    ##  ##    ##  ##       ##    ## ##    ##
   #### ##    ##  ######   ##     ## ########  ######   ######
 
   # Allow ICMP Echo Reply packets (type 0)
@@ -212,25 +255,27 @@ resource "aws_network_acl" "hardened" {
     protocol   = "icmp"
     icmp_type  = "0"
     icmp_code  = "-1"
-    to_port = "0"
-    from_port = "0"
+    to_port    = "0"
+    from_port  = "0"
     cidr_block = "0.0.0.0/0"
     action     = "allow"
   }
+
   # Allow ICMP Destination Unreachable (type 3) packets
   # (host/net unreachables, port closed, fragmentation
   #  issues, etc.)
   ingress {
-    rule_no    = "2"
-    protocol   = "icmp"
-    icmp_type  = "3"
-    icmp_code  = "-1"
+    rule_no   = "2"
+    protocol  = "icmp"
+    icmp_type = "3"
+    icmp_code = "-1"
 
-    to_port = "0"
-    from_port = "0"
+    to_port    = "0"
+    from_port  = "0"
     cidr_block = "0.0.0.0/0"
     action     = "allow"
   }
+
   # Allow ICMP Echo packets (type 8)
   # (ping/tracepath initiator)
   ingress {
@@ -238,11 +283,12 @@ resource "aws_network_acl" "hardened" {
     protocol   = "icmp"
     icmp_type  = "8"
     icmp_code  = "-1"
-    to_port = "0"
-    from_port = "0"
+    to_port    = "0"
+    from_port  = "0"
     cidr_block = "0.0.0.0/0"
     action     = "allow"
   }
+
   # Allow ICMP Time Exceeded (type 11)
   # (tracepath TTL issue)
   ingress {
@@ -250,8 +296,8 @@ resource "aws_network_acl" "hardened" {
     protocol   = "icmp"
     icmp_type  = "11"
     icmp_code  = "-1"
-    to_port = "0"
-    from_port = "0"
+    to_port    = "0"
+    from_port  = "0"
     cidr_block = "0.0.0.0/0"
     action     = "allow"
   }
@@ -276,8 +322,6 @@ resource "aws_network_acl" "hardened" {
   # All other traffic is blocked by an implicit
   # Block all other traffic.
 
-
-
   ########  ######   ########  ########  ######   ######
   ##       ##    ##  ##     ## ##       ##    ## ##    ##
   ##       ##        ##     ## ##       ##       ##
@@ -298,6 +342,7 @@ resource "aws_network_acl" "hardened" {
     cidr_block = "0.0.0.0/0"
     action     = "allow"
   }
+
   # Allow ICMP Destination Unreachable (type 3) packets
   # (host/net unreachables, port closed, fragmentation
   #  issues, etc.)
@@ -306,11 +351,12 @@ resource "aws_network_acl" "hardened" {
     protocol   = "icmp"
     icmp_type  = "3"
     icmp_code  = "-1"
-    to_port = "0"
-    from_port = "0"
+    to_port    = "0"
+    from_port  = "0"
     cidr_block = "0.0.0.0/0"
     action     = "allow"
   }
+
   # Allow ICMP Echo packets (type 8)
   # (ping/tracepath initiator)
   egress {
@@ -318,11 +364,12 @@ resource "aws_network_acl" "hardened" {
     protocol   = "icmp"
     icmp_type  = "8"
     icmp_code  = "-1"
-    to_port = "0"
-    from_port = "0"
+    to_port    = "0"
+    from_port  = "0"
     cidr_block = "0.0.0.0/0"
     action     = "allow"
   }
+
   # Allow ICMP Time Exceeded (type 11)
   # (tracepath TTL issue)
   egress {
@@ -330,11 +377,12 @@ resource "aws_network_acl" "hardened" {
     protocol   = "icmp"
     icmp_type  = "11"
     icmp_code  = "-1"
-    to_port = "0"
-    from_port = "0"
+    to_port    = "0"
+    from_port  = "0"
     cidr_block = "0.0.0.0/0"
     action     = "allow"
   }
+
   # Allow return traffic on ephemeral ports.
   # (Linux kernels use 32768-61000 for ephemeral ports)
   egress {
@@ -353,26 +401,25 @@ resource "aws_network_acl" "hardened" {
     cidr_block = "0.0.0.0/0" # FIXME: lockdown to prod / bastion
     action     = "allow"
   }
-
   # All other traffic is blocked by an implicit
   # DENY rule in the Network ACL (inside of AWS)
 }
 
-
-
- ######  ########  ######          ######   ########   #######  ##     ## ########   ######
+######  ########  ######          ######   ########   #######  ##     ## ########   ######
 ##    ## ##       ##    ##        ##    ##  ##     ## ##     ## ##     ## ##     ## ##    ##
 ##       ##       ##              ##        ##     ## ##     ## ##     ## ##     ## ##
- ######  ######   ##              ##   #### ########  ##     ## ##     ## ########   ######
-      ## ##       ##              ##    ##  ##   ##   ##     ## ##     ## ##              ##
+######  ######   ##              ##   #### ########  ##     ## ##     ## ########   ######
+## ##       ##              ##    ##  ##   ##   ##     ## ##     ## ##              ##
 ##    ## ##       ##    ## ###    ##    ##  ##    ##  ##     ## ##     ## ##        ##    ##
- ######  ########  ######  ###     ######   ##     ##  #######   #######  ##         ######
+######  ########  ######  ###     ######   ##     ##  #######   #######  ##         ######
 
 resource "aws_security_group" "dmz" {
   name        = "dmz"
   description = "Allow services from the private subnet through NAT"
-  vpc_id      = "${aws_vpc.default.id}"
-  tags { Name = "${var.aws_vpc_name}-dmz" }
+  vpc_id      = aws_vpc.default.id
+  tags = {
+    Name = "${var.aws_vpc_name}-dmz"
+  }
 
   # ICMP traffic control
   ingress {
@@ -381,6 +428,7 @@ resource "aws_security_group" "dmz" {
     protocol    = "icmp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   # Allow SSH traffic
   ingress {
     from_port   = 22
@@ -388,6 +436,7 @@ resource "aws_security_group" "dmz" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   # Allow HTTPS traffic
   ingress {
     from_port   = 443
@@ -395,6 +444,7 @@ resource "aws_security_group" "dmz" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   # Allow cf ssh traffic
   ingress {
     from_port   = 2222
@@ -402,6 +452,7 @@ resource "aws_security_group" "dmz" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   # Allow bosh registry traffic into the NAT box
   ingress {
     from_port   = 6868
@@ -409,6 +460,7 @@ resource "aws_security_group" "dmz" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   # Allow all traffic through the NAT from inside the VPC
   ingress {
     from_port   = 0
@@ -416,7 +468,6 @@ resource "aws_security_group" "dmz" {
     protocol    = "-1"
     cidr_blocks = ["${var.network}.0.0/16"]
   }
-
 
   # ICMP traffic control (outbound)
   # Allows diagnostic utilities like ping / traceroute
@@ -431,26 +482,29 @@ resource "aws_security_group" "dmz" {
   # Allow *ALL* outbound TCP traffic.
   # (security ppl may not like this...)
   egress {
-    from_port = 0
-    to_port   = 65535
-    protocol  = "tcp"
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   # Allow *ALL* outbound UDP traffic.
   # (security ppl may not like this...)
   egress {
-    from_port = 0
-    to_port   = 65535
-    protocol  = "udp"
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "udp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 resource "aws_security_group" "wide-open" {
   name        = "wide-open"
   description = "Allow everything in and out"
-  vpc_id      = "${aws_vpc.default.id}"
-  tags { Name = "${var.aws_vpc_name}-wide-open" }
+  vpc_id      = aws_vpc.default.id
+  tags = {
+    Name = "${var.aws_vpc_name}-wide-open"
+  }
 
   ingress {
     from_port   = 0
@@ -465,11 +519,14 @@ resource "aws_security_group" "wide-open" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 resource "aws_security_group" "openvpn" {
-  name = "openvpn"
+  name        = "openvpn"
   description = "Allow only 443 in"
-  vpc_id = "${aws_vpc.default.id}"
-  tags { Name = "${var.aws_vpc_name}-openvpn" }
+  vpc_id      = aws_vpc.default.id
+  tags = {
+    Name = "${var.aws_vpc_name}-openvpn"
+  }
 
   ingress {
     from_port   = 443
@@ -478,17 +535,18 @@ resource "aws_security_group" "openvpn" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 output "aws.network.sg.dmz" {
-  value = "${aws_security_group.dmz.id}"
+  value = aws_security_group.dmz.id
 }
+
 output "aws.network.sg.wide-open" {
-  value = "${aws_security_group.wide-open.id}"
+  value = aws_security_group.wide-open.id
 }
+
 output "aws.network.sg.openvpn" {
-  value = "${aws_security_group.openvpn.id}"
+  value = aws_security_group.openvpn.id
 }
-
-
 
 ##    ##    ###    ########
 ###   ##   ## ##      ##
@@ -499,18 +557,21 @@ output "aws.network.sg.openvpn" {
 ##    ## ##     ##    ##
 
 resource "aws_instance" "nat" {
-  ami             = "${lookup(var.aws_nat_ami, var.aws_region)}"
-  instance_type   = "t2.small"
-  key_name        = "${var.aws_key_name}"
-  vpc_security_group_ids = ["${aws_security_group.dmz.id}"]
-  subnet_id       = "${aws_subnet.dmz.id}"
+  ami                    = var.aws_nat_ami[var.aws_region]
+  instance_type          = "t2.small"
+  key_name               = var.aws_key_name
+  vpc_security_group_ids = [aws_security_group.dmz.id]
+  subnet_id              = aws_subnet.dmz.id
 
   associate_public_ip_address = true
   source_dest_check           = false
 
-  tags { Name = "nat" }
+  tags = {
+    Name = "nat"
+  }
 }
 
 output "box.nat.public" {
-  value = "${aws_instance.nat.public_ip}"
+  value = aws_instance.nat.public_ip
 }
+
